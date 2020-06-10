@@ -1,7 +1,6 @@
 package lol.maki.lab;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -63,9 +62,5 @@ public class SyslogHandler
 	void onDropped(String s) {
 		this.backpressureDroppedLogs.increment();
 		log.warn("Dropped! {}", s);
-	}
-
-	void handleMessage(Map<String, Object> payload) {
-		System.out.println(payload);
 	}
 }
