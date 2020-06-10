@@ -1,0 +1,38 @@
+name: CI
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-java@v1
+      with:
+        java-version: '11.x'
+    - uses: actions/cache@v1
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+    - name: mvn test
+      run: |
+        set -e
+        ./mvnw -V test
+    - name: pack build
+      if: github.ref == 'refs/heads/master'
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        set -e
+        docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+        ./mvnw -V spring-boot:build-image -DskipTests
+        VERSION=$(grep '<version>' pom.xml | head -n 2 | tail -n 1 | sed -e 's|<version>||g' -e 's|</version>||g' -e 's| ||g' |  tr -d '\t')
+        ARTIFACT_ID=$(grep '<artifactId>' pom.xml | head -n 2 | tail -n 1 | sed -e 's|<artifactId>||g' -e 's|</artifactId>||g' -e 's| ||g' |  tr -d '\t')
+        docker push making/${ARTIFACT_ID}:${VERSION}
