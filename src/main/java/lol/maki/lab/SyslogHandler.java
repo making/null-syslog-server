@@ -18,9 +18,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class SyslogHandler
 		implements BiFunction<NettyInbound, NettyOutbound, Publisher<Void>> {
-	private final Counter incomingPayloads;
+	private final Counter ingressPayloads;
 
-	private final Counter incomingLogs;
+	private final Counter ingressLogs;
 
 	private final Counter backpressureDroppedLogs;
 
@@ -32,23 +32,23 @@ public class SyslogHandler
 
 
 	public SyslogHandler(MeterRegistry meterRegistry) {
-		this.incomingPayloads = meterRegistry.counter("payloads.incoming");
-		this.incomingLogs = meterRegistry.counter("logs.incoming");
+		this.ingressPayloads = meterRegistry.counter("payloads.ingress");
+		this.ingressLogs = meterRegistry.counter("logs.ingress");
 		this.backpressureDroppedLogs = meterRegistry.counter("logs.backpressure.dropped");
 	}
 
 	@Override
 	public Publisher<Void> apply(NettyInbound in, NettyOutbound out) {
-		Flux<String> incoming = in.receive().asString();
-		incoming.doOnNext(__ -> this.incomingPayloads.increment())
+		Flux<String> ingress = in.receive().asString();
+		ingress.doOnNext(__ -> this.ingressPayloads.increment())
 				.transform(this::parse)
-				.doOnNext(__ -> this.incomingLogs.increment())
+				.doOnNext(__ -> this.ingressLogs.increment())
 				.subscribe();
 		return Flux.never();
 	}
 
-	Flux<String> parse(Flux<String> incoming) {
-		return incoming
+	Flux<String> parse(Flux<String> ingress) {
+		return ingress
 				.flatMapIterable(s -> Arrays.asList(s.split(SPLIT_PATTERN)))
 				.windowUntil(s -> s.endsWith(LF))
 				.flatMap(f -> f.collect(Collectors.joining()))
