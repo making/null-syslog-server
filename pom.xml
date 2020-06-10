@@ -67,7 +67,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<imageName>making/${artifactId}</imageName>
+					<imageName>making/${artifactId}:${version}</imageName>
 				</configuration>
 			</plugin>
 		</plugins>
